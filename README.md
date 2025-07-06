@@ -117,3 +117,19 @@ To run the unit and integration tests:
 ```bash
 pytest
 ```
+
+## Deployment with Docker
+
+1.  **Build the Docker image:**
+
+    ```bash
+    docker build -t proxy-checker .
+    ```
+
+2.  **Run the Docker container:**
+
+    ```bash
+    docker run -p 5000:5000 proxy-checker
+    ```
+
+    The API will be available at `http://localhost:5000`.
