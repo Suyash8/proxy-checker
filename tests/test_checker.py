@@ -72,3 +72,39 @@ def test_get_geo_data_failure(mocker):
     result = get_geo_data(ip)
     
     assert result == {}
+
+def test_check_proxy_anonymous_true(mocker):
+    mocker.patch('requests.get', side_effect=[
+        mocker.Mock(status_code=200, json=lambda: {"origin": "5.6.7.8"}), # Different IP
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE)
+    ])
+    
+    proxy = "1.2.3.4:8080"
+    proxy_type = "http"
+    result = check_proxy(proxy, proxy_type)
+    
+    assert result["anonymous"] == True
+
+def test_check_proxy_anonymous_false(mocker):
+    mocker.patch('requests.get', side_effect=[
+        mocker.Mock(status_code=200, json=lambda: {"origin": "1.2.3.4"}), # Same IP
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE)
+    ])
+    
+    proxy = "1.2.3.4:8080"
+    proxy_type = "http"
+    result = check_proxy(proxy, proxy_type)
+    
+    assert result["anonymous"] == False
+
+def test_check_proxy_type_https(mocker):
+    mocker.patch('requests.get', side_effect=[
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_IP_RESPONSE),
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE)
+    ])
+    
+    proxy = "1.2.3.4:8080"
+    proxy_type = "https"
+    result = check_proxy(proxy, proxy_type)
+    
+    assert result["proxy_type"] == "HTTPS"
