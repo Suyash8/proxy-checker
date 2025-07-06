@@ -41,5 +41,11 @@ def check_proxy(proxy: str, proxy_type: str) -> dict:
             "anonymous": origin_ip != proxy.split(':')[0],
         }
         
+    except requests.exceptions.Timeout as e:
+        return {"status": "dead", "error": f"Timeout: {str(e)}"}
+    except requests.exceptions.ConnectionError as e:
+        return {"status": "dead", "error": f"ConnectionError: {str(e)}"}
+    except requests.exceptions.HTTPError as e:
+        return {"status": "dead", "error": f"HTTPError: {str(e)}"}
     except requests.exceptions.RequestException as e:
-        return {"status": "dead", "error": str(e)}
+        return {"status": "dead", "error": f"RequestException: {str(e)}"}
