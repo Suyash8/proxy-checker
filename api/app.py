@@ -11,9 +11,12 @@ app = Flask(__name__)
 
 @app.route('/check', methods=['POST'])
 def check():
-    data = request.get_json()
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json"}), 400
 
-    if not data:
+    data = request.get_json(silent=True)
+
+    if data is None:
         return jsonify({"error": "Invalid JSON"}), 400
 
     proxy = data.get('proxy')
