@@ -9,6 +9,10 @@ from proxy_checker.checker import check_proxy
 
 app = Flask(__name__)
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
 @app.route('/check', methods=['POST'])
 def check():
     if not request.is_json:
