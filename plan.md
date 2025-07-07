@@ -1,88 +1,88 @@
 ### **Implementation Plan: RapidAPI Feature Integration**
 
 **Git Branching Strategy:**
-*   [ ] All new feature development will occur on dedicated feature branches, branched off `develop`.
-*   [ ] Each day's work will ideally correspond to a single feature branch or a logical part of one.
-*   [ ] Branches will be merged into `develop` and deleted upon completion and successful testing.
+*   [x] All new feature development will occur on dedicated feature branches, branched off `develop`.
+*   [x] Each day's work will ideally correspond to a single feature branch or a logical part of one.
+*   [x] Branches will be merged into `develop` and deleted upon completion and successful testing.
 
 ---
 
 ### **Phase 1: Core Feature Gating & Enhancements**
 
 *   **Day 1: RapidAPI Plan Integration & Basic Feature Gating**
-    *   [ ] **Git Action:** Create branch `feature/rapidapi-gating` from `develop`.
-    *   [ ] **Objective:** Implement the logic to read the RapidAPI subscription header and gate existing features.
+    *   [x] **Git Action:** Create branch `feature/rapidapi-gating` from `develop`.
+    *   [x] **Objective:** Implement the logic to read the RapidAPI subscription header and gate existing features.
     *   **File Changes:**
-        1.  [ ] **Modify `api/app.py`**:
-            *   [ ] Import `request` from Flask (already there).
-            *   [ ] Inside the `check()` function, retrieve the `X-RapidAPI-Subscription` header:
+        1.  [x] **Modify `api/app.py`**:
+            *   [x] Import `request` from Flask (already there).
+            *   [x] Inside the `check()` function, retrieve the `X-RapidAPI-Subscription` header:
                 ```python
                 user_plan = request.headers.get('X-RapidAPI-Subscription', 'BASIC').upper()
                 ```
-            *   [ ] Implement conditional logic for `SOCKS Proxy Support` and `Proxy Authentication`:
-                *   [ ] If `user_plan` is `BASIC` and `proxy_type` is `socks4` or `socks5`, return a 403 Forbidden error with a message like "SOCKS proxy support requires a PRO plan or higher."
-                *   [ ] If `user_plan` is `BASIC` and `username` or `password` are provided in the request, return a 403 Forbidden error with a message like "Proxy authentication requires a PRO plan or higher."
-            *   [ ] Pass `user_plan` to the `check_proxy` function (you'll modify `check_proxy` later).
-    *   [ ] **Testing:** Manually test the `/check` endpoint with different `X-RapidAPI-Subscription` headers (simulated via `curl -H "X-RapidAPI-Subscription: BASIC"` etc.) and with SOCKS/auth parameters to ensure correct gating.
-    *   [ ] **Commit:** `feat: implement rapidapi plan gating for basic features` on `feature/rapidapi-gating`.
+            *   [x] Implement conditional logic for `SOCKS Proxy Support` and `Proxy Authentication`:
+                *   [x] If `user_plan` is `BASIC` and `proxy_type` is `socks4` or `socks5`, return a 403 Forbidden error with a message like "SOCKS proxy support requires a PRO plan or higher."
+                *   [x] If `user_plan` is `BASIC` and `username` or `password` are provided in the request, return a 403 Forbidden error with a message like "Proxy authentication requires a PRO plan or higher."
+            *   [x] Pass `user_plan` to the `check_proxy` function (you'll modify `check_proxy` later).
+    *   [x] **Testing:** Manually test the `/check` endpoint with different `X-RapidAPI-Subscription` headers (simulated via `curl -H "X-RapidAPI-Subscription: BASIC"` etc.) and with SOCKS/auth parameters to ensure correct gating.
+    *   [x] **Commit:** `feat: implement rapidapi plan gating for basic features` on `feature/rapidapi-gating`.
 
 *   **Day 2: `check_proxy` Enhancements (SOCKS, Auth, ISP/ASN, Custom Target URL)**
-    *   [ ] **Git Action:** Continue on `feature/rapidapi-gating`.
-    *   [ ] **Objective:** Extend the `check_proxy` function to support new parameters and return new data points.
+    *   [x] **Git Action:** Continue on `feature/rapidapi-gating`.
+    *   [x] **Objective:** Extend the `check_proxy` function to support new parameters and return new data points.
     *   **File Changes:**
-        1.  [ ] **Modify `proxy_checker/checker.py`**:
-            *   [ ] Update `check_proxy` function signature to accept `username`, `password`, `target_url` (all optional, with defaults).
-            *   [ ] Modify `requests.get` call to include `auth` parameter if `username` and `password` are provided.
-            *   [ ] Adjust proxy URL construction for SOCKS proxies (e.g., `socks5://`).
-            *   [ ] If `target_url` is provided, use it instead of `httpbin.org/ip`.
-            *   [ ] Add logic to fetch ISP/ASN data (e.g., from `ip-api.com` response) and include it in the returned dictionary.
-        2.  [ ] **Modify `api/app.py`**:
-            *   [ ] Pass `username`, `password`, `target_url` from the request body to the `check_proxy` function.
-            *   [ ] Implement conditional logic to filter `isp`, `asn` from the response if `user_plan` is `BASIC`.
-    *   [ ] **Testing:**
-        *   [ ] Update `tests/test_checker.py` to include unit tests for SOCKS, authentication, ISP/ASN data, and custom target URL.
-        *   [ ] Manually test `/check` with SOCKS proxies, authenticated proxies, and custom target URLs, verifying the output and gating.
-    *   [ ] **Commit:** `feat: enhance check_proxy for socks, auth, isp/asn, custom target` on `feature/rapidapi-gating`.
+        1.  [x] **Modify `proxy_checker/checker.py`**:
+            *   [x] Update `check_proxy` function signature to accept `username`, `password`, `target_url` (all optional, with defaults).
+            *   [x] Modify `requests.get` call to include `auth` parameter if `username` and `password` are provided.
+            *   [x] Adjust proxy URL construction for SOCKS proxies (e.g., `socks5://`).
+            *   [x] If `target_url` is provided, use it instead of `httpbin.org/ip`.
+            *   [x] Add logic to fetch ISP/ASN data (e.g., from `ip-api.com` response) and include it in the returned dictionary.
+        2.  [x] **Modify `api/app.py`**:
+            *   [x] Pass `username`, `password`, `target_url` from the request body to the `check_proxy` function.
+            *   [x] Implement conditional logic to filter `isp`, `asn` from the response if `user_plan` is `BASIC`.
+    *   [x] **Testing:**
+        *   [x] Update `tests/test_checker.py` to include unit tests for SOCKS, authentication, ISP/ASN data, and custom target URL.
+        *   [x] Manually test `/check` with SOCKS proxies, authenticated proxies, and custom target URLs, verifying the output and gating.
+    *   [x] **Commit:** `feat: enhance check_proxy for socks, auth, isp/asn, custom target` on `feature/rapidapi-gating`.
 
 *   **Day 3: `check_proxy` Enhancements (DNS Leak, SSL Verification)**
-    *   [ ] **Git Action:** Continue on `feature/rapidapi-gating`.
-    *   [ ] **Objective:** Add more advanced checks to the `check_proxy` function.
+    *   [x] **Git Action:** Continue on `feature/rapidapi-gating`.
+    *   [x] **Objective:** Add more advanced checks to the `check_proxy` function.
     *   **File Changes:**
-        1.  [ ] **Modify `proxy_checker/checker.py`**:
-            *   [ ] Implement `dns_leak_test()` function: Make a request through the proxy to a DNS leak test service (e.g., `ipleak.net/json`), parse the response, and determine if a leak occurred.
-            *   [ ] Implement `ssl_verification()` function: For HTTPS proxies, perform a more thorough SSL certificate check (e.g., using `ssl` module or `requests` advanced features).
-            *   [ ] Integrate these functions into `check_proxy` and add `dns_leak_detected` and `ssl_verified` to the returned dictionary.
-        2.  [ ] **Modify `api/app.py`**:
-            *   [ ] Implement conditional logic to filter `dns_leak_detected` and `ssl_verified` from the response if `user_plan` is `BASIC` or `PRO`.
-    *   [ ] **Testing:**
-        *   [ ] Update `tests/test_checker.py` with unit tests for DNS leak and SSL verification.
-        *   [ ] Manually test `/check` with proxies that might exhibit these behaviors, verifying the output and gating.
-    *   [ ] **Commit:** `feat: add dns leak and ssl verification to proxy check` on `feature/rapidapi-gating`.
+        1.  [x] **Modify `proxy_checker/checker.py`**:
+            *   [x] Implement `dns_leak_test()` function: Make a request through the proxy to a DNS leak test service (e.g., `ipleak.net/json`), parse the response, and determine if a leak occurred.
+            *   [x] Implement `ssl_verification()` function: For HTTPS proxies, perform a more thorough SSL certificate check (e.g., using `ssl` module or `requests` advanced features).
+            *   [x] Integrate these functions into `check_proxy` and add `dns_leak_detected` and `ssl_verified` to the returned dictionary.
+        2.  [x] **Modify `api/app.py`**:
+            *   [x] Implement conditional logic to filter `dns_leak_detected` and `ssl_verified` from the response if `user_plan` is `BASIC` or `PRO`.
+    *   [x] **Testing:**
+        *   [x] Update `tests/test_checker.py` with unit tests for DNS leak and SSL verification.
+        *   [x] Manually test `/check` with proxies that might exhibit these behaviors, verifying the output and gating.
+    *   [x] **Commit:** `feat: add dns leak and ssl verification to proxy check` on `feature/rapidapi-gating`.
 
 *   **Day 4: Reputation & Blacklist Check Integration**
-    *   [ ] **Git Action:** Continue on `feature/rapidapi-gating`.
-    *   [ ] **Objective:** Integrate an external service for proxy reputation and blacklist checking.
+    *   [x] **Git Action:** Continue on `feature/rapidapi-gating`.
+    *   [x] **Objective:** Integrate an external service for proxy reputation and blacklist checking.
     *   **File Changes:**
-        1.  [ ] **Modify `proxy_checker/checker.py`**:
-            *   [ ] Add a new function `get_reputation_data(ip: str) -> dict`.
-            *   [ ] **Placeholder/Integration:** This function will call an external API (e.g., a paid service like IPQualityScore, or a free one if available and suitable) to get reputation/blacklist data. For initial implementation, it can return dummy data or a simple `True/False` for `blacklisted` and a fixed `reputation_score`.
-            *   [ ] Integrate this into `check_proxy` and add `reputation_score` and `blacklisted` to the returned dictionary.
-        2.  [ ] **Modify `api/app.py`**:
-            *   [ ] Implement conditional logic to filter `reputation_score` and `blacklisted` from the response if `user_plan` is `BASIC`, `PRO`, or `ULTRA`.
-    *   [ ] **Testing:**
-        *   [ ] Update `tests/test_checker.py` with unit tests for reputation/blacklist (mocking the external API call).
-        *   [ ] Manually test `/check` to verify the output and gating.
-    *   [ ] **Commit:** `feat: integrate proxy reputation and blacklist check` on `feature/rapidapi-gating`.
+        1.  [x] **Modify `proxy_checker/checker.py`**:
+            *   [x] Add a new function `get_reputation_data(ip: str) -> dict`.
+            *   [x] **Placeholder/Integration:** This function will call an external API (e.g., a paid service like IPQualityScore, or a free one if available and suitable) to get reputation/blacklist data. For initial implementation, it can return dummy data or a simple `True/False` for `blacklisted` and a fixed `reputation_score`.
+            *   [x] Integrate this into `check_proxy` and add `reputation_score` and `blacklisted` to the returned dictionary.
+        2.  [x] **Modify `api/app.py`**:
+            *   [x] Implement conditional logic to filter `reputation_score` and `blacklisted` from the response if `user_plan` is `BASIC`, `PRO`, or `ULTRA`.
+    *   [x] **Testing:**
+        *   [x] Update `tests/test_checker.py` with unit tests for reputation/blacklist (mocking the external API call).
+        *   [x] Manually test `/check` to verify the output and gating.
+    *   [x] **Commit:** `feat: integrate proxy reputation and blacklist check` on `feature/rapidapi-gating`.
 
 *   **Day 5: Phase 1 Testing & Refinement**
     *   [ ] **Git Action:** Merge `feature/rapidapi-gating` into `develop`. Delete `feature/rapidapi-gating`.
-    *   [ ] **Objective:** Ensure all feature gating and enhancements for the `/check` endpoint are stable.
+    *   [x] **Objective:** Ensure all feature gating and enhancements for the `/check` endpoint are stable.
     *   **Tasks:**
-        1.  [ ] Run all existing unit and integration tests (`pytest`). Fix any regressions.
-        2.  [ ] Perform comprehensive manual testing of the `/check` endpoint with various `X-RapidAPI-Subscription` headers and input parameters (SOCKS, auth, custom URL, etc.).
-        3.  [ ] Refine error messages and responses for clarity.
-        4.  [ ] Update `README.md` with details on new parameters and response fields for the `/check` endpoint.
-    *   [ ] **Commit:** `merge: complete phase 1 feature gating and check endpoint enhancements` on `develop`.
+        1.  [x] Run all existing unit and integration tests (`pytest`). Fix any regressions.
+        2.  [x] Perform comprehensive manual testing of the `/check` endpoint with various `X-RapidAPI-Subscription` headers and input parameters (SOCKS, auth, custom URL, etc.).
+        3.  [x] Refine error messages and responses for clarity.
+        4.  [x] Update `README.md` with details on new parameters and response fields for the `/check` endpoint.
+    *   [x] **Commit:** `merge: complete phase 1 feature gating and check endpoint enhancements` on `develop`.
 
 ---
 
