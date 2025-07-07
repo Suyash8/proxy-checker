@@ -30,7 +30,6 @@ def check():
     proxy_type = data.get('type')
     username = data.get('username')
     password = data.get('password')
-    target_url = data.get('target_url')
 
     if not proxy or not proxy_type:
         return jsonify({"error": "Missing 'proxy' or 'type' in request body"}), 400
@@ -45,7 +44,20 @@ def check():
     if user_plan == 'BASIC' and (username or password):
         return jsonify({"error": "Proxy authentication requires a PRO plan or higher."}), 403
 
-    result = check_proxy(proxy, proxy_type, username, password, target_url, user_plan)
+    # Prepare arguments for check_proxy
+    check_proxy_args = {
+        'proxy': proxy,
+        'proxy_type': proxy_type,
+        'username': username,
+        'password': password,
+        'user_plan': user_plan
+    }
+
+    # Only add target_url if it's present in the request data
+    if 'target_url' in data:
+        check_proxy_args['target_url'] = data.get('target_url')
+
+    result = check_proxy(**check_proxy_args)
 
     # Filter DNS leak and SSL verification if user_plan is BASIC or PRO
     if user_plan in ['BASIC', 'PRO']:

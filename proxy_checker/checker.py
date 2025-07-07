@@ -59,7 +59,7 @@ def get_reputation_data(ip: str) -> dict:
         "threat_type": "none"    # Dummy threat type
     }
 
-def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str = None, target_url: str = "http://httpbin.org/ip", user_plan: str = "BASIC") -> dict:
+def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str = None, target_url: str = None, user_plan: str = "BASIC") -> dict:
     """
     Checks the status of a proxy with enhanced features.
     """
@@ -69,11 +69,14 @@ def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str
     }
 
     auth = (username, password) if username and password else None
+    
+    # Use default target_url if none is provided
+    effective_target_url = target_url if target_url is not None else "http://httpbin.org/ip"
 
     start_time = datetime.now()
 
     try:
-        response = requests.get(target_url, proxies=proxies, auth=auth, timeout=5)
+        response = requests.get(effective_target_url, proxies=proxies, auth=auth, timeout=5)
         response.raise_for_status()
 
         end_time = datetime.now()

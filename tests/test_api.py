@@ -124,7 +124,14 @@ def test_check_endpoint_target_url_passed(client, mocker):
     )
     
     assert response.status_code == 200
-    mock_check_proxy.assert_called_once_with('1.2.3.4:8080', 'http', None, None, 'https://example.com', 'PRO')
+    mock_check_proxy.assert_called_once_with(
+        proxy='1.2.3.4:8080',
+        proxy_type='http',
+        username=None,
+        password=None,
+        target_url='https://example.com',
+        user_plan='PRO'
+    )
 
 def test_check_endpoint_isp_asn_filtered_basic_plan(client, mocker):
     mocker.patch('api.app.check_proxy', return_value={
