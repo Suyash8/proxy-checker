@@ -43,6 +43,12 @@ def check():
         return jsonify({"error": "Proxy authentication requires a PRO plan or higher."}), 403
 
     result = check_proxy(proxy, proxy_type, username, password, target_url, user_plan)
+
+    # Filter DNS leak and SSL verification if user_plan is BASIC or PRO
+    if user_plan in ['BASIC', 'PRO']:
+        result.pop("dns_leak_detected", None)
+        result.pop("ssl_verified", None)
+
     return jsonify(result)
 
 if __name__ == '__main__':

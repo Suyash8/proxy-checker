@@ -1,4 +1,5 @@
 import requests
+import ssl
 from datetime import datetime
 
 def get_geo_data(ip: str) -> dict:
@@ -11,6 +12,39 @@ def get_geo_data(ip: str) -> dict:
         return response.json()
     except requests.exceptions.RequestException:
         return {}
+
+def dns_leak_test(proxies: dict) -> bool:
+    """
+    Performs a DNS leak test through the proxy.
+    Returns True if a DNS leak is detected, False otherwise.
+    """
+    try:
+        # Use a known DNS leak test service that returns JSON
+        response = requests.get("https://ipleak.net/json/", proxies=proxies, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        # Check if the reported IP is different from the proxy's IP
+        # This is a simplified check, a more robust one would compare DNS server IPs
+        if "ip" in data and data["ip"] != proxies["http"].split('//')[1].split(':')[0]:
+            return True
+        return False
+    except requests.exceptions.RequestException:
+        return True  # Assume leak or failure if test cannot be performed
+
+def ssl_verification(proxy_url: str) -> bool:
+    """
+    Performs a basic SSL certificate verification for HTTPS proxies.
+    Returns True if SSL certificate is valid, False otherwise.
+    """
+    try:
+        # Attempt to connect to a well-known HTTPS site through the proxy
+        # and verify SSL certificate
+        requests.get("https://www.google.com", proxies={"https": proxy_url}, timeout=5, verify=True)
+        return True
+    except requests.exceptions.SSLError:
+        return False
+    except requests.exceptions.RequestException:
+        return False
 
 def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str = None, target_url: str = "http://httpbin.org/ip", user_plan: str = "BASIC") -> dict:
     """
@@ -50,6 +84,11 @@ def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str
         if user_plan != 'BASIC':
             result["isp"] = geo_data.get("isp")
             result["asn"] = geo_data.get("as")
+
+        # Add DNS leak and SSL verification if user_plan is not BASIC or PRO
+        if user_plan not in ['BASIC', 'PRO']:
+            result["dns_leak_detected"] = dns_leak_test(proxies)
+            result["ssl_verified"] = ssl_verification(proxies["https"])
 
         return result
 

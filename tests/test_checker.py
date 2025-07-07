@@ -1,6 +1,6 @@
 import pytest
 import requests
-from proxy_checker.checker import check_proxy, get_geo_data
+from proxy_checker.checker import check_proxy, get_geo_data, dns_leak_test, ssl_verification
 
 # Mock data for successful proxy check
 MOCK_SUCCESS_IP_RESPONSE = {"origin": "1.1.1.1"}
@@ -10,12 +10,14 @@ MOCK_SUCCESS_GEO_RESPONSE = {"country": "United States", "isp": "Some ISP", "as"
 def test_check_proxy_success(mocker):
     mocker.patch('requests.get', side_effect=[
         mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_IP_RESPONSE),
-        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE)
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE),
+        mocker.Mock(status_code=200, json=lambda: {"ip": "1.2.3.4"}), # For dns_leak_test
+        mocker.Mock(status_code=200) # For ssl_verification
     ])
     
     proxy = "1.2.3.4:8080"
     proxy_type = "http"
-    result = check_proxy(proxy, proxy_type, user_plan="PRO")
+    result = check_proxy(proxy, proxy_type, user_plan="ULTRA")
     
     assert result["status"] == "alive"
     assert isinstance(result["latency_ms"], int)
@@ -24,6 +26,8 @@ def test_check_proxy_success(mocker):
     assert result["anonymous"] == True # Because origin_ip (1.1.1.1) != proxy_ip (1.2.3.4)
     assert result["isp"] == "Some ISP"
     assert result["asn"] == "AS12345 Some ASN"
+    assert result["dns_leak_detected"] == False
+    assert result["ssl_verified"] == True
 
 def test_check_proxy_success_basic_plan(mocker):
     mocker.patch('requests.get', side_effect=[
@@ -42,6 +46,28 @@ def test_check_proxy_success_basic_plan(mocker):
     assert result["anonymous"] == True
     assert "isp" not in result
     assert "asn" not in result
+    assert "dns_leak_detected" not in result
+    assert "ssl_verified" not in result
+
+def test_check_proxy_success_pro_plan(mocker):
+    mocker.patch('requests.get', side_effect=[
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_IP_RESPONSE),
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE)
+    ])
+    
+    proxy = "1.2.3.4:8080"
+    proxy_type = "http"
+    result = check_proxy(proxy, proxy_type, user_plan="PRO")
+    
+    assert result["status"] == "alive"
+    assert isinstance(result["latency_ms"], int)
+    assert result["proxy_type"] == "HTTP"
+    assert result["country"] == "United States"
+    assert result["anonymous"] == True
+    assert result["isp"] == "Some ISP"
+    assert result["asn"] == "AS12345 Some ASN"
+    assert "dns_leak_detected" not in result
+    assert "ssl_verified" not in result
 
 # Test case for proxy timeout
 def test_check_proxy_timeout(mocker):
@@ -185,3 +211,33 @@ def test_check_proxy_socks4(mocker):
     result = check_proxy(proxy, proxy_type, user_plan="PRO")
     
     assert result["proxy_type"] == "SOCKS4"
+
+def test_dns_leak_test_no_leak(mocker):
+    mocker.patch('requests.get', return_value=mocker.Mock(status_code=200, json=lambda: {"ip": "1.2.3.4"}))
+    proxies = {"http": "http://1.2.3.4:8080"}
+    assert dns_leak_test(proxies) == False
+
+def test_dns_leak_test_leak(mocker):
+    mocker.patch('requests.get', return_value=mocker.Mock(status_code=200, json=lambda: {"ip": "5.6.7.8"}))
+    proxies = {"http": "http://1.2.3.4:8080"}
+    assert dns_leak_test(proxies) == True
+
+def test_dns_leak_test_failure(mocker):
+    mocker.patch('requests.get', side_effect=requests.exceptions.RequestException)
+    proxies = {"http": "http://1.2.3.4:8080"}
+    assert dns_leak_test(proxies) == True
+
+def test_ssl_verification_success(mocker):
+    mocker.patch('requests.get', return_value=mocker.Mock(status_code=200))
+    proxy_url = "https://1.2.3.4:8080"
+    assert ssl_verification(proxy_url) == True
+
+def test_ssl_verification_failure(mocker):
+    mocker.patch('requests.get', side_effect=requests.exceptions.SSLError)
+    proxy_url = "https://1.2.3.4:8080"
+    assert ssl_verification(proxy_url) == False
+
+def test_ssl_verification_request_exception(mocker):
+    mocker.patch('requests.get', side_effect=requests.exceptions.RequestException)
+    proxy_url = "https://1.2.3.4:8080"
+    assert ssl_verification(proxy_url) == False
