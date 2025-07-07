@@ -4,8 +4,11 @@ import os
 # Add the project root to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+import uuid
+
 from flask import Flask, request, jsonify
 from proxy_checker.checker import check_proxy
+from celery_worker import celery_app, process_proxies_task
 
 app = Flask(__name__)
 
@@ -105,6 +108,40 @@ def check_bulk():
         results.append(result)
 
     return jsonify(results)
+
+@app.route('/check/async', methods=['POST'])
+def check_async():
+    user_plan = request.headers.get('X-RapidAPI-Subscription', 'BASIC').upper()
+
+    if user_plan in ['BASIC', 'PRO', 'ULTRA']:
+        return jsonify({"error": "Asynchronous checking requires an ENTERPRISE plan or higher."}), 403
+
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json"}), 400
+
+    data = request.get_json(silent=True)
+
+    if data is None:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    proxies_to_check = data.get('proxies')
+    callback_url = data.get('callback_url')
+
+    if not isinstance(proxies_to_check, list) or not proxies_to_check:
+        return jsonify({"error": "'proxies' must be a non-empty JSON array of proxy objects."}), 400
+
+    if len(proxies_to_check) > 1000:
+        return jsonify({"error": "Maximum 1000 proxies allowed per asynchronous request."}), 400
+
+    job_id = str(uuid.uuid4())
+
+    # Pass user_plan to the Celery task so filtering can be applied within the worker
+    for proxy_data in proxies_to_check:
+        proxy_data['user_plan'] = user_plan
+
+    process_proxies_task.delay(proxies_to_check, job_id, callback_url)
+
+    return jsonify({"job_id": job_id, "status": "submitted"}), 202
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

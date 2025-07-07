@@ -5,3 +5,6 @@ pytest
 pytest-mock
 gunicorn
 PySocks
+celery
+redis
+uuid

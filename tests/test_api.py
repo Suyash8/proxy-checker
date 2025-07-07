@@ -512,3 +512,79 @@ def test_check_bulk_endpoint_missing_proxy_data_in_list(client, mocker):
     assert response.json[1] == {"error": "Missing 'proxy' or 'type' in one of the proxy objects."}
     assert response.json[2] == {"error": "Missing 'proxy' or 'type' in one of the proxy objects."}
 
+# Tests for /check/async endpoint
+def test_check_async_endpoint_gating_basic_plan(client):
+    response = client.post(
+        '/check/async',
+        json={'proxies': [{'proxy': '1.2.3.4:8080', 'type': 'http'}]},
+        headers={'X-RapidAPI-Subscription': 'BASIC'}
+    )
+    
+    assert response.status_code == 403
+    assert response.json == {"error": "Asynchronous checking requires an ENTERPRISE plan or higher."}
+
+def test_check_async_endpoint_gating_pro_plan(client):
+    response = client.post(
+        '/check/async',
+        json={'proxies': [{'proxy': '1.2.3.4:8080', 'type': 'http'}]},
+        headers={'X-RapidAPI-Subscription': 'PRO'}
+    )
+    
+    assert response.status_code == 403
+    assert response.json == {"error": "Asynchronous checking requires an ENTERPRISE plan or higher."}
+
+def test_check_async_endpoint_gating_ultra_plan(client):
+    response = client.post(
+        '/check/async',
+        json={'proxies': [{'proxy': '1.2.3.4:8080', 'type': 'http'}]},
+        headers={'X-RapidAPI-Subscription': 'ULTRA'}
+    )
+    
+    assert response.status_code == 403
+    assert response.json == {"error": "Asynchronous checking requires an ENTERPRISE plan or higher."}
+
+def test_check_async_endpoint_valid_payload(client, mocker):
+    mock_delay = mocker.patch('api.app.process_proxies_task.delay')
+    
+    proxies_to_check = [
+        {'proxy': '1.2.3.4:8080', 'type': 'http'},
+        {'proxy': '5.6.7.8:8080', 'type': 'https'}
+    ]
+    
+    response = client.post(
+        '/check/async',
+        json={'proxies': proxies_to_check, 'callback_url': 'http://example.com/callback'},
+        headers={'X-RapidAPI-Subscription': 'ENTERPRISE'}
+    )
+    
+    assert response.status_code == 202
+    assert "job_id" in response.json
+    assert response.json["status"] == "submitted"
+    mock_delay.assert_called_once()
+    args, kwargs = mock_delay.call_args
+    assert len(args[0]) == 2  # Two proxies
+    assert args[1] == response.json["job_id"]
+    assert args[2] == 'http://example.com/callback'
+    assert args[0][0]['user_plan'] == 'ENTERPRISE'
+
+def test_check_async_endpoint_invalid_json_not_list(client):
+    response = client.post(
+        '/check/async',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'ENTERPRISE'}
+    )
+    
+    assert response.status_code == 400
+    assert response.json == {"error": "'proxies' must be a non-empty JSON array of proxy objects."}
+
+def test_check_async_endpoint_too_many_proxies(client):
+    proxies_to_check = [{'proxy': f'1.2.3.{i}:8080', 'type': 'http'} for i in range(1001)]
+    response = client.post(
+        '/check/async',
+        json={'proxies': proxies_to_check},
+        headers={'X-RapidAPI-Subscription': 'ENTERPRISE'}
+    )
+    
+    assert response.status_code == 400
+    assert response.json == {"error": "Maximum 1000 proxies allowed per asynchronous request."}
+
