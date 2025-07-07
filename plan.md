@@ -89,86 +89,86 @@
 ### **Phase 2: New Endpoints & Advanced Features**
 
 *   **Day 6: Bulk Checking Endpoint (`/check/bulk`)**
-    *   [ ] **Git Action:** Create branch `feature/bulk-check` from `develop`.
-    *   [ ] **Objective:** Implement an endpoint for checking multiple proxies in a single request.
+    *   [x] **Git Action:** Create branch `feature/bulk-check` from `develop`.
+    *   [x] **Objective:** Implement an endpoint for checking multiple proxies in a single request.
     *   **File Changes:**
-        1.  [ ] **Modify `api/app.py`**:
-            *   [ ] Add a new route `@app.route('/check/bulk', methods=['POST'])`.
-            *   [ ] Implement logic to read the `X-RapidAPI-Subscription` header. If `user_plan` is `BASIC` or `PRO`, return a 403 Forbidden error.
-            *   [ ] Parse the incoming JSON request, expecting a list of proxy objects.
-            *   [ ] Iterate through the list, calling `check_proxy` for each.
-            *   [ ] Return a JSON array of results.
-            *   [ ] Implement input validation for the bulk request (e.g., limit the number of proxies in a single batch to 100).
-    *   [ ] **Testing:**
-        *   [ ] Add new integration tests in `tests/test_api.py` for `/check/bulk` (valid requests, invalid requests, plan gating).
-        *   [ ] Manually test the endpoint with various batch sizes.
-    *   [ ] **Commit:** `feat: implement /check/bulk endpoint` on `feature/bulk-check`.
+        1.  [x] **Modify `api/app.py`**:
+            *   [x] Add a new route `@app.route('/check/bulk', methods=['POST'])`.
+            *   [x] Implement logic to read the `X-RapidAPI-Subscription` header. If `user_plan` is `BASIC` or `PRO`, return a 403 Forbidden error.
+            *   [x] Parse the incoming JSON request, expecting a list of proxy objects.
+            *   [x] Iterate through the list, calling `check_proxy` for each.
+            *   [x] Return a JSON array of results.
+            *   [x] Implement input validation for the bulk request (e.g., limit the number of proxies in a single batch to 100).
+    *   [x] **Testing:**
+        *   [x] Add new integration tests in `tests/test_api.py` for `/check/bulk` (valid requests, invalid requests, plan gating).
+        *   [x] Manually test the endpoint with various batch sizes.
+    *   [x] **Commit:** `feat: implement /check/bulk endpoint` on `feature/bulk-check`.
 
 *   **Day 7: Asynchronous Processing (`/check/async` - Job Submission)**
-    *   [ ] **Git Action:** Continue on `feature/bulk-check` (or create `feature/async-check` if preferred to separate concerns).
-    *   [ ] **Objective:** Implement the endpoint for submitting asynchronous proxy checking jobs. This will require a background task queue (e.g., Celery with Redis/RabbitMQ) and a simple database (e.g., SQLite for job status).
+    *   [x] **Git Action:** Continue on `feature/bulk-check` (or create `feature/async-check` if preferred to separate concerns).
+    *   [x] **Objective:** Implement the endpoint for submitting asynchronous proxy checking jobs. This will require a background task queue (e.g., Celery with Redis/RabbitMQ) and a simple database (e.g., SQLite for job status).
     *   **File Changes:**
-        1.  [ ] **Add new dependencies:** Update `requirements.txt` for Celery, Redis/RabbitMQ client, etc.
-        2.  [ ] **Setup Celery:** Create `celery_worker.py` and configure Celery.
-        3.  [ ] **Modify `api/app.py`**:
-            *   [ ] Add a new route `@app.route('/check/async', methods=['POST'])`.
-            *   [ ] Implement logic to read the `X-RapidAPI-Subscription` header. If `user_plan` is `BASIC`, `PRO`, or `ULTRA`, return a 403 Forbidden error.
-            *   [ ] Parse the incoming JSON request (list of proxies, optional `callback_url`).
-            *   [ ] Generate a unique `job_id`.
-            *   [ ] Store job status (e.g., `submitted`) and proxy list in a simple database (e.g., SQLite file).
-            *   [ ] Dispatch a Celery task to process the proxies in the background.
-            *   [ ] Return `job_id` and `status: submitted`.
-        4.  [ ] **Modify `proxy_checker/checker.py`**:
-            *   [ ] Create a Celery task function that takes a list of proxies, processes them using `check_proxy`, updates job status in the database, and sends a webhook if `callback_url` is provided.
-    *   [ ] **Testing:**
-        *   [ ] Add integration tests for `/check/async` (job submission, plan gating).
-        *   [ ] Manually test job submission and verify job status in the database.
-    *   [ ] **Commit:** `feat: implement /check/async job submission` on `feature/bulk-check`.
+        1.  [x] **Add new dependencies:** Update `requirements.txt` for Celery, Redis/RabbitMQ client, etc.
+        2.  [x] **Setup Celery:** Create `celery_worker.py` and configure Celery.
+        3.  [x] **Modify `api/app.py`**:
+            *   [x] Add a new route `@app.route('/check/async', methods=['POST'])`.
+            *   [x] Implement logic to read the `X-RapidAPI-Subscription` header. If `user_plan` is `BASIC`, `PRO`, or `ULTRA`, return a 403 Forbidden error.
+            *   [x] Parse the incoming JSON request (list of proxies, optional `callback_url`).
+            *   [x] Generate a unique `job_id`.
+            *   [x] Store job status (e.g., `submitted`) and proxy list in a simple database (e.g., SQLite file).
+            *   [x] Dispatch a Celery task to process the proxies in the background.
+            *   [x] Return `job_id` and `status: submitted`.
+        4.  [x] **Modify `proxy_checker/checker.py`**:
+            *   [x] Create a Celery task function that takes a list of proxies, processes them using `check_proxy`, updates job status in the database, and sends a webhook if `callback_url` is provided.
+    *   [x] **Testing:**
+        *   [x] Add integration tests for `/check/async` (job submission, plan gating).
+        *   [x] Manually test job submission and verify job status in the database.
+    *   [x] **Commit:** `feat: implement /check/async job submission` on `feature/bulk-check`.
 
 *   **Day 8: Asynchronous Processing (`/check/async/{job_id}` & CSV Export)**
-    *   [ ] **Git Action:** Continue on `feature/bulk-check`.
-    *   [ ] **Objective:** Implement endpoints for retrieving asynchronous job results and CSV export.
+    *   [x] **Git Action:** Continue on `feature/bulk-check`.
+    *   [x] **Objective:** Implement endpoints for retrieving asynchronous job results and CSV export.
     *   **File Changes:**
-        1.  [ ] **Modify `api/app.py`**:
-            *   [ ] Add a new route `@app.route('/check/async/<job_id>', methods=['GET'])`.
-            *   [ ] Retrieve job status and results from the database based on `job_id`.
-            *   [ ] Return job status and results (if completed).
-            *   [ ] Add a new route `@app.route('/check/async/<job_id>/csv', methods=['GET'])`.
-            *   [ ] Retrieve results for the `job_id`.
-            *   [ ] Convert results to CSV format and return as a file download.
-        2.  [ ] **Modify `proxy_checker/checker.py`**:
-            *   [ ] Add helper functions for CSV conversion.
-    *   [ ] **Testing:**
-        *   [ ] Add integration tests for `/check/async/{job_id}` (status, results) and `/check/async/{job_id}/csv`.
-        *   [ ] Manually test job retrieval and CSV download.
-    *   [ ] **Commit:** `feat: implement async job retrieval and csv export` on `feature/bulk-check`.
+        1.  [x] **Modify `api/app.py`**:
+            *   [x] Add a new route `@app.route('/check/async/<job_id>', methods=['GET'])`.
+            *   [x] Retrieve job status and results from the database based on `job_id`.
+            *   [x] Return job status and results (if completed).
+            *   [x] Add a new route `@app.route('/check/async/<job_id>/csv', methods=['GET'])`.
+            *   [x] Retrieve results for the `job_id`.
+            *   [x] Convert results to CSV format and return as a file download.
+        2.  [x] **Modify `proxy_checker/checker.py`**:
+            *   [x] Add helper functions for CSV conversion.
+    *   [x] **Testing:**
+        *   [x] Add integration tests for `/check/async/{job_id}` (status, results) and `/check/async/{job_id}/csv`.
+        *   [x] Manually test job retrieval and CSV download.
+    *   [x] **Commit:** `feat: implement async job retrieval and csv export` on `feature/bulk-check`.
 
 *   **Day 9: Alerts & Notifications (Placeholder/Integration)**
-    *   [ ] **Git Action:** Continue on `feature/bulk-check`.
-    *   [ ] **Objective:** Outline the implementation for alerts. This is likely a separate service or integration.
+    *   [x] **Git Action:** Continue on `feature/bulk-check`.
+    *   [x] **Objective:** Outline the implementation for alerts. This is likely a separate service or integration.
     *   **File Changes:**
-        1.  [ ] **Conceptual/Design:**
-            *   [ ] This feature would likely involve a user interface (dashboard) where users configure alert rules (e.g., "notify me if a proxy goes dead").
-            *   [ ] Your background worker (Celery task) would need to check these rules after each proxy check.
-            *   [ ] Integration with an external notification service (e.g., SendGrid for email, Twilio for SMS, or a webhook service).
-        2.  [ ] **Minimal API Changes (if any):**
-            *   [ ] Perhaps a new endpoint `/alerts/configure` to set up rules, but this might be better handled via a separate dashboard.
-            *   [ ] For now, focus on the conceptual integration.
-    *   [ ] **Testing:** N/A for direct API testing, but conceptual testing of the alert flow.
-    *   [ ] **Commit:** `docs: outline alerts and notifications feature` on `feature/bulk-check`.
+        1.  [x] **Conceptual/Design:**
+            *   [x] This feature would likely involve a user interface (dashboard) where users configure alert rules (e.g., "notify me if a proxy goes dead").
+            *   [x] Your background worker (Celery task) would need to check these rules after each proxy check.
+            *   [x] Integration with an external notification service (e.g., SendGrid for email, Twilio for SMS, or a webhook service).
+        2.  [x] **Minimal API Changes (if any):**
+            *   [x] Perhaps a new endpoint `/alerts/configure` to set up rules, but this might be better handled via a separate dashboard.
+            *   [x] For now, focus on the conceptual integration.
+    *   [x] **Testing:** N/A for direct API testing, but conceptual testing of the alert flow.
+    *   [x] **Commit:** `docs: outline alerts and notifications feature` on `feature/bulk-check`.
 
 *   **Day 10: Final Testing, Documentation Updates, and Release Preparation**
-    *   [ ] **Git Action:** Merge `feature/bulk-check` into `develop`. Delete `feature/bulk-check`.
-    *   [ ] **Objective:** Ensure all new features are stable, documented, and ready for deployment.
+    *   [x] **Git Action:** Merge `feature/bulk-check` into `develop`. Delete `feature/bulk-check`.
+    *   [x] **Objective:** Ensure all new features are stable, documented, and ready for deployment.
     *   **Tasks:**
-        1.  [ ] Run all unit and integration tests (`pytest`). Fix any regressions.
-        2.  [ ] Perform comprehensive manual testing of all new endpoints (`/check/bulk`, `/check/async`, `/check/async/{job_id}`, `/check/async/{job_id}/csv`) with various inputs and RapidAPI plan headers.
-        3.  [ ] Update `README.md` with documentation for all new endpoints, their parameters, and response formats.
-        4.  [ ] Update `proxy-checker-plan.md` to mark all steps as complete.
-        5.  [ ] **Release Preparation:**
-            *   [ ] Create `release/v2.0` branch from `develop`.
-            *   [ ] Perform final checks on the release branch.
-            *   [ ] Merge `release/v2.0` into `main` with a tag: `git tag -a v2.0 -m "Version 2.0 - Feature Expansion"`.
-            *   [ ] Merge `release/v2.0` back into `develop`.
-            *   [ ] Delete `release/v2.0`.
-    *   [ ] **Commit:** `merge: complete phase 2 feature implementation and release preparation` on `develop`.
+        1.  [x] Run all unit and integration tests (`pytest`). Fix any regressions.
+        2.  [x] Perform comprehensive manual testing of all new endpoints (`/check/bulk`, `/check/async`, `/check/async/{job_id}`, `/check/async/{job_id}/csv`) with various inputs and RapidAPI plan headers.
+        3.  [x] Update `README.md` with documentation for all new endpoints, their parameters, and response formats.
+        4.  [x] Update `proxy-checker-plan.md` to mark all steps as complete.
+        5.  [x] **Release Preparation:**
+            *   [x] Create `release/v2.0` branch from `develop`.
+            *   [x] Perform final checks on the release branch.
+            *   [x] Merge `release/v2.0` into `main` with a tag: `git tag -a v2.0 -m "Version 2.0 - Feature Expansion"`.
+            *   [x] Merge `release/v2.0` back into `develop`.
+            *   [x] Delete `release/v2.0`.
+    *   [x] **Commit:** `merge: complete phase 2 feature implementation and release preparation` on `develop`.
