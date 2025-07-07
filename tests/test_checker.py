@@ -7,7 +7,7 @@ MOCK_SUCCESS_IP_RESPONSE = {"origin": "1.1.1.1"}
 MOCK_SUCCESS_GEO_RESPONSE = {"country": "United States", "isp": "Some ISP", "as": "AS12345 Some ASN"}
 
 # Test case for a successful proxy check
-def test_check_proxy_success(mocker):
+def test_check_proxy_success_enterprise_plan(mocker):
     mocker.patch('requests.get', side_effect=[
         mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_IP_RESPONSE),
         mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE),
@@ -17,7 +17,7 @@ def test_check_proxy_success(mocker):
     
     proxy = "1.2.3.4:8080"
     proxy_type = "http"
-    result = check_proxy(proxy, proxy_type, user_plan="ULTRA")
+    result = check_proxy(proxy, proxy_type, user_plan="ENTERPRISE")
     
     assert result["status"] == "alive"
     assert isinstance(result["latency_ms"], int)
@@ -28,6 +28,9 @@ def test_check_proxy_success(mocker):
     assert result["asn"] == "AS12345 Some ASN"
     assert result["dns_leak_detected"] == False
     assert result["ssl_verified"] == True
+    assert result["reputation_score"] == 85
+    assert result["blacklisted"] == False
+    assert result["threat_type"] == "none"
 
 def test_check_proxy_success_basic_plan(mocker):
     mocker.patch('requests.get', side_effect=[
@@ -48,6 +51,9 @@ def test_check_proxy_success_basic_plan(mocker):
     assert "asn" not in result
     assert "dns_leak_detected" not in result
     assert "ssl_verified" not in result
+    assert "reputation_score" not in result
+    assert "blacklisted" not in result
+    assert "threat_type" not in result
 
 def test_check_proxy_success_pro_plan(mocker):
     mocker.patch('requests.get', side_effect=[
@@ -68,6 +74,59 @@ def test_check_proxy_success_pro_plan(mocker):
     assert result["asn"] == "AS12345 Some ASN"
     assert "dns_leak_detected" not in result
     assert "ssl_verified" not in result
+    assert "reputation_score" not in result
+    assert "blacklisted" not in result
+    assert "threat_type" not in result
+
+def test_check_proxy_success_ultra_plan(mocker):
+    mocker.patch('requests.get', side_effect=[
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_IP_RESPONSE),
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE),
+        mocker.Mock(status_code=200, json=lambda: {"ip": "1.2.3.4"}), # For dns_leak_test
+        mocker.Mock(status_code=200) # For ssl_verification
+    ])
+    
+    proxy = "1.2.3.4:8080"
+    proxy_type = "http"
+    result = check_proxy(proxy, proxy_type, user_plan="ULTRA")
+    
+    assert result["status"] == "alive"
+    assert isinstance(result["latency_ms"], int)
+    assert result["proxy_type"] == "HTTP"
+    assert result["country"] == "United States"
+    assert result["anonymous"] == True
+    assert result["isp"] == "Some ISP"
+    assert result["asn"] == "AS12345 Some ASN"
+    assert result["dns_leak_detected"] == False
+    assert result["ssl_verified"] == True
+    assert "reputation_score" not in result
+    assert "blacklisted" not in result
+    assert "threat_type" not in result
+
+def test_check_proxy_success_enterprise_plan(mocker):
+    mocker.patch('requests.get', side_effect=[
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_IP_RESPONSE),
+        mocker.Mock(status_code=200, json=lambda: MOCK_SUCCESS_GEO_RESPONSE),
+        mocker.Mock(status_code=200, json=lambda: {"ip": "1.2.3.4"}), # For dns_leak_test
+        mocker.Mock(status_code=200) # For ssl_verification
+    ])
+    
+    proxy = "1.2.3.4:8080"
+    proxy_type = "http"
+    result = check_proxy(proxy, proxy_type, user_plan="ENTERPRISE")
+    
+    assert result["status"] == "alive"
+    assert isinstance(result["latency_ms"], int)
+    assert result["proxy_type"] == "HTTP"
+    assert result["country"] == "United States"
+    assert result["anonymous"] == True
+    assert result["isp"] == "Some ISP"
+    assert result["asn"] == "AS12345 Some ASN"
+    assert result["dns_leak_detected"] == False
+    assert result["ssl_verified"] == True
+    assert result["reputation_score"] == 85
+    assert result["blacklisted"] == False
+    assert result["threat_type"] == "none"
 
 # Test case for proxy timeout
 def test_check_proxy_timeout(mocker):

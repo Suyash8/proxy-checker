@@ -49,6 +49,12 @@ def check():
         result.pop("dns_leak_detected", None)
         result.pop("ssl_verified", None)
 
+    # Filter reputation and blacklist data if user_plan is BASIC, PRO, or ULTRA
+    if user_plan in ['BASIC', 'PRO', 'ULTRA']:
+        result.pop("reputation_score", None)
+        result.pop("blacklisted", None)
+        result.pop("threat_type", None)
+
     return jsonify(result)
 
 if __name__ == '__main__':

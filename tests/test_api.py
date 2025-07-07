@@ -16,13 +16,18 @@ def test_check_endpoint_valid_payload(client, mocker):
         "country": "United States",
         "anonymous": True,
         "isp": "Some ISP",
-        "asn": "AS12345"
+        "asn": "AS12345",
+        "dns_leak_detected": False,
+        "ssl_verified": True,
+        "reputation_score": 85,
+        "blacklisted": False,
+        "threat_type": "none"
     })
     
     response = client.post(
         '/check',
         json={'proxy': '1.2.3.4:8080', 'type': 'http'},
-        headers={'X-RapidAPI-Subscription': 'PRO'}
+        headers={'X-RapidAPI-Subscription': 'ENTERPRISE'}
     )
     
     assert response.status_code == 200
@@ -33,7 +38,12 @@ def test_check_endpoint_valid_payload(client, mocker):
         "country": "United States",
         "anonymous": True,
         "isp": "Some ISP",
-        "asn": "AS12345"
+        "asn": "AS12345",
+        "dns_leak_detected": False,
+        "ssl_verified": True,
+        "reputation_score": 85,
+        "blacklisted": False,
+        "threat_type": "none"
     }
 
 def test_check_endpoint_socks_gating_basic_plan(client):
@@ -156,6 +166,159 @@ def test_check_endpoint_isp_asn_included_pro_plan(client, mocker):
     assert response.json["isp"] == "Some ISP"
     assert response.json["asn"] == "AS12345"
 
+def test_check_endpoint_dns_ssl_filtered_basic_plan(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True
+    })
+    
+    response = client.post(
+        '/check',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'BASIC'}
+    )
+    
+    assert response.status_code == 200
+    assert "dns_leak_detected" not in response.json
+    assert "ssl_verified" not in response.json
+
+def test_check_endpoint_dns_ssl_filtered_pro_plan(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True,
+        "dns_leak_detected": False,
+        "ssl_verified": True
+    })
+    
+    response = client.post(
+        '/check',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'PRO'}
+    )
+    
+    assert response.status_code == 200
+    assert "dns_leak_detected" not in response.json
+    assert "ssl_verified" not in response.json
+
+def test_check_endpoint_dns_ssl_included_ultra_plan(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True,
+        "dns_leak_detected": False,
+        "ssl_verified": True
+    })
+    
+    response = client.post(
+        '/check',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'ULTRA'}
+    )
+    
+    assert response.status_code == 200
+    assert response.json["dns_leak_detected"] == False
+    assert response.json["ssl_verified"] == True
+
+def test_check_endpoint_reputation_filtered_basic_plan(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True,
+        "reputation_score": 85,
+        "blacklisted": False,
+        "threat_type": "none"
+    })
+    
+    response = client.post(
+        '/check',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'BASIC'}
+    )
+    
+    assert response.status_code == 200
+    assert "reputation_score" not in response.json
+    assert "blacklisted" not in response.json
+    assert "threat_type" not in response.json
+
+def test_check_endpoint_reputation_filtered_pro_plan(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True,
+        "reputation_score": 85,
+        "blacklisted": False,
+        "threat_type": "none"
+    })
+    
+    response = client.post(
+        '/check',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'PRO'}
+    )
+    
+    assert response.status_code == 200
+    assert "reputation_score" not in response.json
+    assert "blacklisted" not in response.json
+    assert "threat_type" not in response.json
+
+def test_check_endpoint_reputation_filtered_ultra_plan(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True,
+        "reputation_score": 85,
+        "blacklisted": False,
+        "threat_type": "none"
+    })
+    
+    response = client.post(
+        '/check',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'ULTRA'}
+    )
+    
+    assert response.status_code == 200
+    assert "reputation_score" not in response.json
+    assert "blacklisted" not in response.json
+    assert "threat_type" not in response.json
+
+def test_check_endpoint_reputation_included_enterprise_plan(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True,
+        "reputation_score": 85,
+        "blacklisted": False,
+        "threat_type": "none"
+    })
+    
+    response = client.post(
+        '/check',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'ENTERPRISE'}
+    )
+    
+    assert response.status_code == 200
+    assert response.json["reputation_score"] == 85
+    assert response.json["blacklisted"] == False
+    assert response.json["threat_type"] == "none"
+
 def test_check_endpoint_no_plan_header_defaults_to_basic(client, mocker):
     mocker.patch('api.app.check_proxy', return_value={
         "status": "alive",
@@ -173,6 +336,11 @@ def test_check_endpoint_no_plan_header_defaults_to_basic(client, mocker):
     assert response.status_code == 200
     assert "isp" not in response.json
     assert "asn" not in response.json
+    assert "dns_leak_detected" not in response.json
+    assert "ssl_verified" not in response.json
+    assert "reputation_score" not in response.json
+    assert "blacklisted" not in response.json
+    assert "threat_type" not in response.json
 
 def test_check_endpoint_invalid_plan_header_defaults_to_basic(client, mocker):
     mocker.patch('api.app.check_proxy', return_value={
@@ -192,6 +360,11 @@ def test_check_endpoint_invalid_plan_header_defaults_to_basic(client, mocker):
     assert response.status_code == 200
     assert "isp" not in response.json
     assert "asn" not in response.json
+    assert "dns_leak_detected" not in response.json
+    assert "ssl_verified" not in response.json
+    assert "reputation_score" not in response.json
+    assert "blacklisted" not in response.json
+    assert "threat_type" not in response.json
 
 
 

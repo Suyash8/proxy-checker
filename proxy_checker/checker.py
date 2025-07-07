@@ -46,6 +46,19 @@ def ssl_verification(proxy_url: str) -> bool:
     except requests.exceptions.RequestException:
         return False
 
+def get_reputation_data(ip: str) -> dict:
+    """
+    Placeholder for fetching proxy reputation and blacklist data.
+    For initial implementation, returns dummy data.
+    """
+    # In a real scenario, this would call an external API (e.g., IPQualityScore)
+    # For now, return dummy data
+    return {
+        "reputation_score": 85,  # Dummy score out of 100
+        "blacklisted": False,    # Dummy blacklist status
+        "threat_type": "none"    # Dummy threat type
+    }
+
 def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str = None, target_url: str = "http://httpbin.org/ip", user_plan: str = "BASIC") -> dict:
     """
     Checks the status of a proxy with enhanced features.
@@ -89,6 +102,13 @@ def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str
         if user_plan not in ['BASIC', 'PRO']:
             result["dns_leak_detected"] = dns_leak_test(proxies)
             result["ssl_verified"] = ssl_verification(proxies["https"])
+
+        # Add reputation and blacklist check if user_plan is not BASIC, PRO, or ULTRA
+        if user_plan not in ['BASIC', 'PRO', 'ULTRA']:
+            reputation_data = get_reputation_data(proxy_ip)
+            result["reputation_score"] = reputation_data.get("reputation_score")
+            result["blacklisted"] = reputation_data.get("blacklisted")
+            result["threat_type"] = reputation_data.get("threat_type")
 
         return result
 
