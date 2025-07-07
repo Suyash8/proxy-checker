@@ -39,7 +39,7 @@ def ssl_verification(proxy_url: str) -> bool:
     try:
         # Attempt to connect to a well-known HTTPS site through the proxy
         # and verify SSL certificate
-        requests.get("https://www.google.com", proxies={"https": proxy_url}, timeout=5, verify=True)
+        requests.get("https://www.google.com", proxies={"https": proxy_url}, timeout=5, verify=False)
         return True
     except requests.exceptions.SSLError:
         return False
@@ -63,9 +63,16 @@ def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str
     """
     Checks the status of a proxy with enhanced features.
     """
+    if proxy_type in ['http', 'https']:
+        proxy_url = f'{proxy_type}://{proxy}'
+    elif proxy_type in ['socks4', 'socks5']:
+        proxy_url = f'{proxy_type}://{proxy}'
+    else:
+        raise ValueError(f"Unsupported proxy type: {proxy_type}")
+
     proxies = {
-        "http": f'{proxy_type}://{proxy}',
-        "https": f'{proxy_type}://{proxy}'
+        "http": proxy_url,
+        "https": proxy_url
     }
 
     auth = (username, password) if username and password else None
@@ -121,5 +128,11 @@ def check_proxy(proxy: str, proxy_type: str, username: str = None, password: str
         return {"status": "dead", "error": f"ConnectionError: {str(e)} (Note: SOCKS proxies require PySocks library)"}
     except requests.exceptions.HTTPError as e:
         return {"status": "dead", "error": f"HTTPError: {str(e)}"}
+    except requests.exceptions.SSLError as e:
+        return {"status": "dead", "error": f"SSLError: {str(e)}"}
+    except ValueError as e:
+        if "Cannot set verify_mode to CERT_NONE when check_hostname is enabled." in str(e):
+            return {"status": "dead", "error": f"SSL Configuration Error: {str(e)}. This often happens with HTTPS proxies that have invalid or self-signed certificates."}
+        return {"status": "dead", "error": f"ValueError: {str(e)}"}
     except requests.exceptions.RequestException as e:
         return {"status": "dead", "error": f"RequestException: {str(e)}"}
