@@ -57,5 +57,54 @@ def check():
 
     return jsonify(result)
 
+@app.route('/check/bulk', methods=['POST'])
+def check_bulk():
+    user_plan = request.headers.get('X-RapidAPI-Subscription', 'BASIC').upper()
+
+    if user_plan in ['BASIC', 'PRO']:
+        return jsonify({"error": "Bulk checking requires an ULTRA plan or higher."}), 403
+
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json"}), 400
+
+    data = request.get_json(silent=True)
+
+    if data is None:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    if not isinstance(data, list):
+        return jsonify({"error": "Request body must be a JSON array of proxy objects."}), 400
+
+    if len(data) > 100:
+        return jsonify({"error": "Maximum 100 proxies allowed per bulk request."}), 400
+
+    results = []
+    for proxy_data in data:
+        proxy = proxy_data.get('proxy')
+        proxy_type = proxy_data.get('type')
+        username = proxy_data.get('username')
+        password = proxy_data.get('password')
+        target_url = proxy_data.get('target_url')
+
+        if not proxy or not proxy_type:
+            results.append({"error": "Missing 'proxy' or 'type' in one of the proxy objects."})
+            continue
+
+        result = check_proxy(proxy, proxy_type, username, password, target_url, user_plan)
+
+        # Apply filtering based on user_plan for bulk results as well
+        if user_plan in ['BASIC', 'PRO']:
+            result.pop("dns_leak_detected", None)
+            result.pop("ssl_verified", None)
+
+        if user_plan in ['BASIC', 'PRO', 'ULTRA']:
+            result.pop("reputation_score", None)
+            result.pop("blacklisted", None)
+            result.pop("threat_type", None)
+
+        results.append(result)
+
+    return jsonify(results)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

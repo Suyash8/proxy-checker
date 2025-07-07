@@ -408,3 +408,107 @@ def test_check_endpoint_invalid_json(client):
 def test_check_endpoint_get_method(client):
     response = client.get('/check')
     assert response.status_code == 405 # Method Not Allowed
+
+# Tests for /check/bulk endpoint
+def test_check_bulk_endpoint_valid_payload(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True,
+        "isp": "Some ISP",
+        "asn": "AS12345",
+        "dns_leak_detected": False,
+        "ssl_verified": True,
+        "reputation_score": 85,
+        "blacklisted": False,
+        "threat_type": "none"
+    })
+    
+    proxies_to_check = [
+        {'proxy': '1.2.3.4:8080', 'type': 'http'},
+        {'proxy': '5.6.7.8:8080', 'type': 'https'}
+    ]
+    
+    response = client.post(
+        '/check/bulk',
+        json=proxies_to_check,
+        headers={'X-RapidAPI-Subscription': 'ULTRA'}
+    )
+    
+    assert response.status_code == 200
+    assert isinstance(response.json, list)
+    assert len(response.json) == 2
+    assert response.json[0]["status"] == "alive"
+    assert "reputation_score" not in response.json[0] # Filtered for ULTRA plan
+
+def test_check_bulk_endpoint_gating_basic_plan(client):
+    response = client.post(
+        '/check/bulk',
+        json=[{'proxy': '1.2.3.4:8080', 'type': 'http'}],
+        headers={'X-RapidAPI-Subscription': 'BASIC'}
+    )
+    
+    assert response.status_code == 403
+    assert response.json == {"error": "Bulk checking requires an ULTRA plan or higher."}
+
+def test_check_bulk_endpoint_gating_pro_plan(client):
+    response = client.post(
+        '/check/bulk',
+        json=[{'proxy': '1.2.3.4:8080', 'type': 'http'}],
+        headers={'X-RapidAPI-Subscription': 'PRO'}
+    )
+    
+    assert response.status_code == 403
+    assert response.json == {"error": "Bulk checking requires an ULTRA plan or higher."}
+
+def test_check_bulk_endpoint_invalid_json_not_list(client):
+    response = client.post(
+        '/check/bulk',
+        json={'proxy': '1.2.3.4:8080', 'type': 'http'},
+        headers={'X-RapidAPI-Subscription': 'ULTRA'}
+    )
+    
+    assert response.status_code == 400
+    assert response.json == {"error": "Request body must be a JSON array of proxy objects."}
+
+def test_check_bulk_endpoint_too_many_proxies(client):
+    proxies_to_check = [{'proxy': f'1.2.3.{i}:8080', 'type': 'http'} for i in range(101)]
+    response = client.post(
+        '/check/bulk',
+        json=proxies_to_check,
+        headers={'X-RapidAPI-Subscription': 'ULTRA'}
+    )
+    
+    assert response.status_code == 400
+    assert response.json == {"error": "Maximum 100 proxies allowed per bulk request."}
+
+def test_check_bulk_endpoint_missing_proxy_data_in_list(client, mocker):
+    mocker.patch('api.app.check_proxy', return_value={
+        "status": "alive",
+        "latency_ms": 100,
+        "proxy_type": "HTTP",
+        "country": "United States",
+        "anonymous": True
+    })
+    
+    proxies_to_check = [
+        {'proxy': '1.2.3.4:8080', 'type': 'http'},
+        {'type': 'https'}, # Missing proxy
+        {'proxy': '5.6.7.8:8080'}  # Missing type
+    ]
+    
+    response = client.post(
+        '/check/bulk',
+        json=proxies_to_check,
+        headers={'X-RapidAPI-Subscription': 'ULTRA'}
+    )
+    
+    assert response.status_code == 200
+    assert isinstance(response.json, list)
+    assert len(response.json) == 3
+    assert response.json[0]["status"] == "alive"
+    assert response.json[1] == {"error": "Missing 'proxy' or 'type' in one of the proxy objects."}
+    assert response.json[2] == {"error": "Missing 'proxy' or 'type' in one of the proxy objects."}
+
