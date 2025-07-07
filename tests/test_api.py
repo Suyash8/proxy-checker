@@ -588,3 +588,71 @@ def test_check_async_endpoint_too_many_proxies(client):
     assert response.status_code == 400
     assert response.json == {"error": "Maximum 1000 proxies allowed per asynchronous request."}
 
+def test_get_async_results_pending(client, mocker):
+    mock_async_result = mocker.Mock()
+    mock_async_result.state = 'PENDING'
+    mocker.patch('api.app.process_proxies_task.AsyncResult', return_value=mock_async_result)
+
+    response = client.get('/check/async/some_job_id')
+    assert response.status_code == 200
+    assert response.json["job_id"] == "some_job_id"
+    assert response.json["status"] == "pending"
+
+def test_get_async_results_completed(client, mocker):
+    mock_async_result = mocker.Mock()
+    mock_async_result.state = 'SUCCESS'
+    mock_async_result.result = [{"status": "alive"}]
+    mocker.patch('api.app.process_proxies_task.AsyncResult', return_value=mock_async_result)
+
+    response = client.get('/check/async/some_job_id')
+    assert response.status_code == 200
+    assert response.json["job_id"] == "some_job_id"
+    assert response.json["status"] == "completed"
+    assert response.json["results"] == [{"status": "alive"}]
+
+def test_get_async_results_failed(client, mocker):
+    mock_async_result = mocker.Mock()
+    mock_async_result.state = 'FAILURE'
+    mock_async_result.info = Exception("Task failed")
+    mocker.patch('api.app.process_proxies_task.AsyncResult', return_value=mock_async_result)
+
+    response = client.get('/check/async/some_job_id')
+    assert response.status_code == 200
+    assert response.json["job_id"] == "some_job_id"
+    assert response.json["status"] == "failed"
+    assert response.json["error"] == "Task failed"
+
+def test_get_async_results_csv_success(client, mocker):
+    mock_async_result = mocker.Mock()
+    mock_async_result.state = 'SUCCESS'
+    mock_async_result.result = [
+        {"proxy": "1.1.1.1:8080", "status": "alive"},
+        {"proxy": "2.2.2.2:8080", "status": "dead"}
+    ]
+    mocker.patch('api.app.process_proxies_task.AsyncResult', return_value=mock_async_result)
+
+    response = client.get('/check/async/some_job_id/csv')
+    assert response.status_code == 200
+    assert response.headers["Content-type"] == "text/csv"
+    assert response.headers["Content-Disposition"] == "attachment; filename=some_job_id.csv"
+    expected_csv = "proxy,status\r\n1.1.1.1:8080,alive\r\n2.2.2.2:8080,dead\r\n"
+    assert response.data.decode() == expected_csv
+
+def test_get_async_results_csv_job_not_completed(client, mocker):
+    mock_async_result = mocker.Mock()
+    mock_async_result.state = 'PENDING'
+    mocker.patch('api.app.process_proxies_task.AsyncResult', return_value=mock_async_result)
+
+    response = client.get('/check/async/some_job_id/csv')
+    assert response.status_code == 404
+    assert response.json == {"error": "Job not completed or no results available."}
+
+def test_get_async_results_csv_no_results(client, mocker):
+    mock_async_result = mocker.Mock()
+    mock_async_result.state = 'SUCCESS'
+    mock_async_result.result = []
+    mocker.patch('api.app.process_proxies_task.AsyncResult', return_value=mock_async_result)
+
+    response = client.get('/check/async/some_job_id/csv')
+    assert response.status_code == 204
+

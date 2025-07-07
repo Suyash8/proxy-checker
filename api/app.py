@@ -143,5 +143,72 @@ def check_async():
 
     return jsonify({"job_id": job_id, "status": "submitted"}), 202
 
+@app.route('/check/async/<job_id>', methods=['GET'])
+def get_async_results(job_id):
+    task = process_proxies_task.AsyncResult(job_id)
+    if task.state == 'PENDING':
+        response = {
+            'job_id': job_id,
+            'status': 'pending'
+        }
+    elif task.state == 'PROGRESS':
+        response = {
+            'job_id': job_id,
+            'status': 'progress',
+            'info': task.info
+        }
+    elif task.state == 'SUCCESS':
+        response = {
+            'job_id': job_id,
+            'status': 'completed',
+            'results': task.result
+        }
+    elif task.state == 'FAILURE':
+        response = {
+            'job_id': job_id,
+            'status': 'failed',
+            'error': str(task.info)
+        }
+    else:
+        response = {
+            'job_id': job_id,
+            'status': task.state
+        }
+    return jsonify(response)
+
+@app.route('/check/async/<job_id>/csv', methods=['GET'])
+def get_async_results_csv(job_id):
+    task = process_proxies_task.AsyncResult(job_id)
+    if task.state != 'SUCCESS':
+        return jsonify({"error": "Job not completed or no results available."}), 404
+
+    results = task.result
+    if not results:
+        return "", 204 # No content
+
+    # Generate CSV
+    import io
+    import csv
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    # Assuming all result dictionaries have the same keys
+    header = results[0].keys()
+    writer.writerow(header)
+
+    # Write data rows
+    for row in results:
+        writer.writerow([row.get(key, '') for key in header])
+
+    csv_output = output.getvalue()
+    output.close()
+
+    response = app.make_response(csv_output)
+    response.headers["Content-Disposition"] = f"attachment; filename={job_id}.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
